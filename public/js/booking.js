@@ -70,6 +70,7 @@ bookingForm.addEventListener('click',  (e) => {
     
     if(e.target.matches('.change-time-btn')) {
         e.preventDefault()
+        unlockTimeSlot()
         checkAvailableTimes()
     }
 
@@ -168,11 +169,11 @@ async function finalizeBookingElements () {
         createEl('button', 'Boeking Bevestigen', ['confirm-booking-btn', 'btn']))
     bookingForm.innerHTML = ''
     bookingForm.append(appointOverview, formElements, btnContainer)
+    lockTimeSlot()
     const timerElement = appointOverview.querySelector('.timer')
         let time = 10 * 60
         const countdown = setInterval(() => {
             if (time == 0) {
-
                 clearInterval(countdown)
             } else {
                 time--; 
@@ -184,15 +185,24 @@ async function finalizeBookingElements () {
             
             
          }, 1000)
-    lockTimeSlot()
+    
 }
 
 async function lockTimeSlot () {
     const timeSlot = new Date(selection.date)
     timeSlot.setHours(timeSlot.getHours() + 2)
     console.log(timeSlot)
-    await axios.post(`/lockedTimeSlot?t=${timeSlot.getTime()}`)
+    await axios.post('/timeslot', {timeslot: timeSlot, remove: false})
+    return
 }
+
+async function unlockTimeSlot () {
+    const timeSlot = new Date(selection.date)
+    timeSlot.setHours(timeSlot.getHours() + 2)
+    await axios.post('/timeslot', {timeslot: timeSlot, remove: true})
+    return
+}
+
 
 // if there's no 'text', 'class (cl)' or 'attr', pass through 'false'. for cl & attr arrays are expected
 
@@ -226,6 +236,7 @@ function selectedTimeSlot (timeSlots) {
     }
     
 }
+
 
 
 

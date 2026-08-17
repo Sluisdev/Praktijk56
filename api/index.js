@@ -102,11 +102,18 @@ app.get('/calendar', async (req, res) => {
    
 })
 
-app.post('/lockedTimeSlot', (req, res) => {
+app.post('/timeslot', (req, res) => {
     console.log('request received', req.query)
-    const {t} = req.query
-    lockedTimeSlots.push(t)
-    console.log(lockedTimeSlots)
+    const {timeslot, remove} = req.body
+    const time = new Date(timeslot).getTime()
+    console.log(typeof(timeslot), timeslot, typeof(remove), remove)
+    if (remove) {
+        const index = lockedTimeSlots.indexOf(time)
+        lockedTimeSlots.splice(index, 1)
+    } else {
+        lockedTimeSlots.push(new Date(timeslot).getTime())
+    }
+    
     res.send('call received').status(200)
 })
 
