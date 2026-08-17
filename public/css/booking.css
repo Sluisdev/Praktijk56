@@ -1,0 +1,140 @@
+* {
+    padding: 0px;
+    margin: 0px;
+}
+
+.grid-booking {
+    display: grid;
+    grid-template-columns: repeat(6, auto);
+    grid-template-rows: repeat(6, auto);
+    row-gap: 20px;
+    background-color: white;
+}
+
+header {
+    grid-area: 1/1/1/7;
+    background-color: rgb(185, 153, 78);
+    height: 50px;
+    width: 100%;
+}
+
+.booking-container {
+    border: 1px solid;
+    padding: 20px;
+    grid-area: 2/3/4/5;
+    width: 50%;
+    justify-self: center;
+}
+
+.booking-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 25px;
+    /* width: 50%; */
+    height: fit-content;
+}
+
+.booking-info-section {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    text-align: center;
+    gap: 5px;
+}
+
+.selected-treatment-info {
+    display: none;
+    flex-direction: column;
+    width: 350px;
+    text-align: center;
+    gap: 15px;
+
+}
+
+.selected-treatment-info > div * {
+    display: inline;
+    font-weight: 550;
+}
+
+.error {
+    color: red;
+    display: none;
+}
+
+.error-on {
+    display: block;
+}
+
+.loader-container {
+   width: 100%;
+   height: 100vh;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+}
+
+.dots-container {
+    width: 50%;
+    height: 50%;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.dot {
+    height: 15px;
+    width: 15px;
+    background-color: blue;
+    border-radius: 50%;
+    animation: bounce 1.5s infinite
+}
+
+.dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+.dot:nth-child(4) {
+    animation-delay: 0.6s;
+}
+
+
+@keyframes bounce {
+    0% {
+        transform: translateY(0px)
+    }
+    50% {
+        transform: translateY(20px);
+    }
+    100% {
+        transform: translateY(0px)
+    }
+}
+
+.time-slot {
+    width: 50px;
+    border-radius: 5px;
+}
+
+.time-slot:hover {
+
+}
+
+.time-slot-container {
+    width: fit-content;
+    height: fit-content;
+    display: grid;
+    grid-template-columns: repeat(3, 50px);
+    grid-template-rows: repeat(auto-fit, min(25px));
+    justify-items: center;
+    gap: 25px;
+}

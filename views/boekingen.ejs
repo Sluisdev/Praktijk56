@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/booking.css">
+    <link rel="stylesheet" href="https://unpkg.com/js-datepicker/dist/datepicker.min.css">
+    <title>Boek een Afspraak</title>
+</head>
+<body class="grid-booking">
+    <header></header>
+    <section class="booking-container">
+        <form action="/booked" method="POST" class="booking-form">
+            <h1>Boek een Afspraak</h1>
+            <section class="booking-info-section">
+                <label for="date">Datum</label>
+            /* calendar icon here*/<input type="text" name="date" class="calendar" value="Selecteer Datum">
+            </section>
+            <section class="booking-info-section">
+                <label for="treatment">Behandeling</label>
+                <select name="treatment" id="" aria-placeholder="gewenste behandeling">
+                    <option disabled selected value> -- selecteer een optie -- </option>
+                    <% products.map((p) => { %>
+                        <option value="<%= p.name %>" data-product-id="<%= p._id %>"><%= p.name %></option>
+                    <% }) %>
+                </select>
+            </section>
+            <% products.map((p) => { %>
+                <section class="selected-treatment-info" id="product-<%=p._id%>">
+                    <h3>Behandelingsinformatie</h3>
+                    <div>
+                        <h4><%= p.name %> - </h4><h4>Duur: <%=p.duration%> minuten</h4>
+                    </div> 
+                    <p><%=p.description%></p>
+                </section>
+            <% }) %>
+            <div>
+                <button class="booking-button" id="check-times">Check Beschikbare tijden</button>
+            </div>
+            <p class="error">Niet alle informatie is ingevuld</p>
+        </form>
+    </section>
+    <script src="https://unpkg.com/js-datepicker"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.13.2/dist/axios.min.js"></script>
+    <script src="/js/booking.js"></script>
+</body>
+</html>
