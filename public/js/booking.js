@@ -42,26 +42,31 @@ I'm making use of Event Delegation by attaching an Event Listener to a Parent el
 This ensures that if e.target matches the defined CSS selector, 
 the element is selected again based on the current Nodes, not the Nodes that existed previously */
 
-bookingForm.addEventListener('click',  (e) => {
+bookingForm.addEventListener('click', async (e) => {
     console.log('click')
    if ( e.target.matches('.next-btn') ) {
         e.preventDefault()
-        finalizeBookingElements()
+        bookingForm.innerHTML = await loader()
+        await finalizeBookingElements()
+        contactDetails(document.querySelector('.booking-form'))
+        console.log(e.target)
     }
 
-    if (e.target.matches('.back-btn')) {
+    if (e.target.matches('.back-btn') || e.target.matches('.error-btn')) {
         e.preventDefault()
         selection = {}
         bookingForm.innerHTML = bookingFormInnerHtml
         initCalendar(document.querySelector('.calendar'));
     }
+
     if (e.target.matches('.book-btn')) {
 
     }
-    if ( e.target.matches('select[name=treatment]') ) {
-        let product = document.querySelector('select[name=treatment]')
-        product.addEventListener('change', changeProduct)
-    } 
+
+    // if ( e.target.matches('select[name=treatment]') ) {
+    //     let product = document.querySelector('select[name=treatment]')
+    //     product.addEventListener('change', changeProduct)
+    // } 
 
     if (e.target.matches('#check-times') ) {
         e.preventDefault()
@@ -73,8 +78,25 @@ bookingForm.addEventListener('click',  (e) => {
         unlockTimeSlot()
         checkAvailableTimes()
     }
+})
+
+bookingForm.addEventListener('change', (e) => {
+
+    if ( e.target.matches('select[name=treatment]') ) {
+        console.log()
+        let product = document.querySelector('select[name=treatment]')
+        changeProduct(e)
+        
+    }
+
+    if (e.target.matches('input') && e.target.closest('.form-elements')) {
+        console.log(e.target)
+    }
+    
+    
 
 })
+
 
 function changeProduct (event) {
     if (selection.productId) {
@@ -131,16 +153,25 @@ async function finalizeBookingElements () {
         if (prop === 'productId') {
             const productName = await axios.get(`/product?id=${selection[prop]}`)
             appointmentInfo.appendChild(createEl('li', `Geselecteerde behandeling: ${productName.data}`, [`li-${prop}`], false))
+            appointmentInfo.appendChild(createEl('input', false, false, 
+                [
+                    {attr: 'type', value:'hidden'}, 
+                    {attr: 'value', value:selection[prop]}, 
+                    {attr: 'name', value: prop}
+                ]))
             continue
         } else if ( prop === 'date') {
             const date = new Date(selection[prop])
             appointmentInfo.append(
                 createEl('li', `Geselecteerde Datum: ${new Intl.DateTimeFormat("nl-NL").format(date)}`, [`li-${prop}`], false),
-                createEl('li', `Geselecteerde Tijd: ${date.getHours()}:${date.getMinutes.length == 1 ? date.getMinutes() : `0${date.getMinutes()}`}`, [`li-${prop}`], false)
-
-            )
+                createEl('li', `Geselecteerde Tijd: ${date.getHours()}:${date.getMinutes.length == 1 ? date.getMinutes() : `0${date.getMinutes()}`}`, [`li-${prop}`], false),
+                createEl('input', false, false, 
+                [
+                    {attr: 'type', value:'hidden'}, 
+                    {attr: 'value', value:selection[prop]}, 
+                    {attr: 'name', value: prop}
+                ]))
             continue
-
         }
         appointmentInfo.appendChild(createEl('li', `${prop}: ${selection[prop]}`, [`li-${prop}`], false))
     }
@@ -152,40 +183,26 @@ async function finalizeBookingElements () {
     )
 
     const formElements = createEl('section', false, ['form-elements'])
-    formElements.append(
+    await formElements.append(
         createEl('h3', 'Contact Gegevens'),
-        createEl('label', 'Volledige Naam*', ['label'], [{attr: 'for', value: 'full-name'}]),
-        createEl('input', false, ['full-name','input-booking'], [{attr: 'name', value: 'full-name'}]),
+        createEl('label', 'Volledige Naam*', ['label'], [{attr: 'for', value: 'fullName'}]),
+        createEl('input', false, ['full-name','input-booking'], [{attr: 'name', value: 'fullName'}, {attr: 'required', value: ''}]),
         createEl('label', 'Telefoonnummer*', ['label'], [{attr: 'for', value: 'phone-number'}]),
-        createEl('input', false, ['phone-number', 'input-booking'], [{attr: 'name', value: 'phone-number'}]),
+        createEl('input', false, ['phone-number', 'input-booking'], [{attr: 'name', value: 'phoneNumber'}, {attr: 'required', value: ''}]),
         createEl('label', 'Email Adres*', ['label'], [{attr: 'for', value: 'email-address'}]),
-        createEl('input', false, ['email-address', 'input-booking'], [{attr: 'name', value: 'email-address'}]),
+        createEl('input', false, ['email-address', 'input-booking'], [{attr: 'name', value: 'emailAddress'}, {attr: 'required', value: ''}]),
         createEl('label', 'Ik accepteer de algemene voorwaarden*', ['label','check-box'], [{attr: 'for', value: 'terms-of-conditions'}]),
-        createEl('input', false, ['accepted-tfc'], [{attr: 'name', value: 'terms-of-conditions'}, {attr: 'type', value: 'radio'}])
+        createEl('input', false, ['accepted-tfc'], [{attr: 'name', value: 'toc'}, {attr: 'type', value: 'checkbox'}, {attr: 'required', value: ''}, {attr: 'value', value: 'true' }])
     )
     const btnContainer = createEl('div', false, ['btn-container'])
-    btnContainer.append(
+    await btnContainer.append(
         createEl('button', 'Tijd Wijzigen', ['change-time-btn', 'btn']), 
         createEl('button', 'Boeking Bevestigen', ['confirm-booking-btn', 'btn']))
     bookingForm.innerHTML = ''
-    bookingForm.append(appointOverview, formElements, btnContainer)
+    await bookingForm.replaceChildren(appointOverview, formElements, btnContainer)
     lockTimeSlot()
-    const timerElement = appointOverview.querySelector('.timer')
-        let time = 10 * 60
-        const countdown = setInterval(() => {
-            if (time == 0) {
-                clearInterval(countdown)
-            } else {
-                time--; 
-                const minutes = Math.floor(time / 60)
-                const seconds = time % 60
-                timerElement.textContent = `time: ${minutes}:${String(seconds).length == 2 ? seconds : `0${seconds}`}`
-            }
-            
-            
-            
-         }, 1000)
-    
+    timer()
+    console.log("function finished")
 }
 
 async function lockTimeSlot () {
@@ -203,8 +220,41 @@ async function unlockTimeSlot () {
     return
 }
 
+function timer () {
+    const timerElement = document.querySelector('.timer')
+    let time = 10 * 60
+    const countdown = setInterval(() => {
+        if (time == 0) {
+            unlockTimeSlot()
+            clearInterval(countdown)
+            error("De timer is verlopen. Klik op de knop hieronder om een nieuwe Boeking te maken ")
+        } else {
+            time--; 
+            const minutes = Math.floor(time / 60)
+            const seconds = time % 60
+            timerElement.textContent = `time: ${minutes}:${String(seconds).length == 2 ? seconds : `0${seconds}`}`
+        }
+        
+        
+        
+        }, 1000)
+}
 
-// if there's no 'text', 'class (cl)' or 'attr', pass through 'false'. for cl & attr arrays are expected
+function contactDetails (element) {
+    element.addEventListener('change', (e) => {
+        console.log("change logged", e.target)
+    })
+}
+
+function error (err) {
+    bookingForm.replaceChildren(
+        createEl('h1', 'Oh oh, er is iets misgegaan'), 
+        createEl('p', err, ['error-message']), 
+        createEl('button', 'Nieuwe Boeking', ['error-btn'])
+    )
+}
+
+// cl and attr expect an array. el is mandatory
 
 function createEl (el, text, cl, attr) {
    const element = document.createElement(el)
@@ -213,7 +263,6 @@ function createEl (el, text, cl, attr) {
     if (attr) attr.forEach(e => element.setAttribute(e.attr, e.value))
    return element
 }
-
 
 function selectedTimeSlot (timeSlots) {
     if (timeSlots) {

@@ -7,8 +7,24 @@ const app = express()
 const mongoose = require('mongoose')
 const Product = require('../public/js/models/products')
 const GoogleTokens = require('../public/js/models/gtokens')
+const SyncToken = require('../public/js/models/synctoken')
 const path = require('path')
 let lockedTimeSlots = []
+
+// Ngrok for making my locally hosted app public.
+
+const ngrok = require("@ngrok/ngrok");
+ 
+async function forwardToApp() {
+	const forwarder = await ngrok.forward({
+		addr: "localhost:3000",
+		authtoken_from_env: true,
+		domain: "naturist-sensitize-malt.ngrok-free.dev",
+	});
+	console.log(`Available at: ${forwarder.url()}`);
+}
+ 
+forwardToApp();
 
 mongoose.connect(process.env.DATABASE_URL)
 .then(() => {
@@ -42,7 +58,7 @@ oauth2Client.on('tokens', async (t) => {
         const id = token[0]._id
         if (t.refresh_token) {
             console.log('New refresh token logged!', t.refresh_token)
-        await GoogleTokens.findByIdAndUpdate(id, {refreshToken: t.refresh_token});
+        await GoogleTokens.findByIdAndUpdate(id, {refreshToken: t.refresh_token, date: Date.now()});
         console.log('google tokens updated')
     }
     } catch (e) {
@@ -76,18 +92,50 @@ app.get('/auth', (req, res) => {
         include_granted_scopes: true
     })
     res.redirect(authorizationUrl)
+
 })
 
 app.get('/oauth2callback',  async (req, res) => {
     const authCode = req.query
+    try {
     let {tokens} = await oauth2Client.getToken(authCode)
     await new GoogleTokens({
         refreshToken: tokens.refresh_token, 
         accessToken: tokens.access_token
     }).save()
     oauth2Client.setCredentials(tokens)
-    res.send('Token received!!')
+    const watch = await calendar.events.watch({
+        calendarId: await calendarId(), 
+        requestBody: {
+            id: 19, 
+            type:'webhook', 
+            address:'https://naturist-sensitize-malt.ngrok-free.dev/update' 
+        }
+
+    })
+    console.log(watch)
+    const {data} = await calendar.events.list({calendarId: await calendarId()})
+    await new SyncToken({token: data.nextSyncToken, updated: Date.now()}).save()
+    res.send('everything initialized!')
+    } catch (e) {
+        console.log('error on initialization', e)
+    }
+    
+    /* upon initialization, pull a list of all events. These will be saved to the database.
+        1. filter all events that are before the data of initialization with the exception of recurring events
+        2. Save the following properties:
+        - recurring: true or false 
+        - ObjectId: needs to be ID of event resource
+        - etag from event resource (versioning)
+        - start
+        - end
+        - productId
+        - status
+        - updated
+
+    */
 })
+
 
 app.get('/calendar', async (req, res) => {
     const calendarList = await calendar.calendarList.list()
@@ -97,7 +145,7 @@ app.get('/calendar', async (req, res) => {
         return m.id
     });
     const events = await calendar.events.list({calendarId: bookingsCalendar[0]})
-    console.log(events.data.items)
+    console.log(calendarList.data)
     res.send('events received!!')
    
 })
@@ -119,6 +167,7 @@ app.post('/timeslot', (req, res) => {
 
 app.get('/availability', async (req, res) => {
     const {date, product} = req.query
+    const {duration: trDuration} = await Product.findById(product)
     const selectedDate = new Date(date)
     /* Time provided is in local timezone ( GMT +2 in summer), hence increasing by 2 to work with UTC time. 
     Will need to address this programmatically to prevent any future issues */
@@ -128,14 +177,12 @@ app.get('/availability', async (req, res) => {
     try {
         const calendarList = await calendar.calendarList.list();
         const events = await calendar.events.list({
-            calendarId: calendarList.data.items.filter((f) => {
-                        return f.summary == 'Test Praktijk 56'
-                        }).map((m) => {
-                            return m.id
-                        }), 
+            calendarId: await calendarId(), 
             timeMin: selectedDate, 
             timeMax: nextDay,
         });
+        console.log(events.data.items)
+        console.log(events)
         const scheduledEventTimes = events.data.items.map((t) => {
             if (t.recurrence) {
                 const eventStart = new Date(selectedDate)
@@ -153,7 +200,7 @@ app.get('/availability', async (req, res) => {
                 return {eventStart: eventStart, eventEnd: eventEnd}
             }
         });
-        const availableTimeSlots = calculateTime(scheduledEventTimes, selectedDate)
+        const availableTimeSlots = calculateTime(scheduledEventTimes, selectedDate, trDuration)
         res.send(availableTimeSlots).status(200)
     } catch (e) {
         console.log("Error:", e)
@@ -178,10 +225,110 @@ app.get('/product', async (req, res) => {
     product.name ? res.send(product.name).status(200) : res.send('product was not found').status(500)
 })
 
+app.post('/booked', async (req, res) => {
+    console.log("received booking details:", req.body)
+    const {
+        fullName, date, 
+        productId, phoneNumber, 
+        emailAddress, toc
+    } = req.body;
+    console.log(productId)
+    const product = await Product.findById(productId)
+    const trEndTime = calcEndTime(date ,product.duration)
+    console.log(trEndTime)
+    try {
+        const newAppointment = await calendar.events.insert({
+        calendarId: await calendarId(),
+        requestBody: {
+            summary: `Boeking - ${fullName} | ${product.name}`,
+            start: {
+                dateTime: date,
+                timezone: 'Europe/Amsterdam'
+            },
+            end: {
+                dateTime: trEndTime,
+                timezone: 'Europe/Amsterdam'
+            },
+            description: "testing placing a booking"
+        }
+    })
+    console.log(newAppointment)
+    
+    } catch (e) {
+        console.log('no booking placed, error:', e)
+    }
+    
+    
+
+    // Got the booking data from req.body - V
+    // Fetch duration of treatment to determine the end of the appointment - V
+    // Setup a Watch Channel - V
+    // Receive notification from Watch channel & fetch a list with the latest modifications - V
+    /* When a new event is created, the /updated route will be triggered as there's a Watch channel setup. 
+        When this route is triggered, the last saved 'nextSyncToken'is retrieved and is used to retrieve 
+        a list with the latest modifications. 
+
+        When the newest modifications are received, the idea is to use the ID of the event item, 
+        to check if an event with this ID already exists. If yes, check what has changed, if not, save to the database. 
+
+        Document properties I want to save:
+        - ObjectId: needs to be ID of event resource
+        - etag from event resource (versioning)
+        - start
+        - end
+        - productId
+        - status
+    */
+   /* Send a confirmation email to the customer. This email should contain a link to cancel the booking. */
+
+    res.render('boekingVoltooid')
+})
+
+/* 
+        - SYNC FUNCTION OVERVIEW - 
+https://developers.google.com/workspace/calendar/api/guides/sync
+
+1. Do a full initial sync. This can be done upon authenticating the Calendar access (see /oauth2callback)
+2. Save the nextSynToken - V
+3. Setup a WATCH route for the evens of a specific calendar - V
+4. When the WATCH route is triggered, use the nextSyncToken to pull the added or updated events (see /update)- V
+5. Validate whether event already exist. If yes, validate what changed, if not, save to the database. 
+    * !Need to check whether something is a recurring event!
+    * based on the validation part, a certain function will be triggered to send an email. 
+
+To remove current 0Auth2 client permissions: https://myaccount.google.com/permissions 
+
+*/
+
+app.post('/update', async (req, res) => {
+    console.log('update received:', req.headers)
+    const syncToken = await SyncToken.find()
+    console.log(syncToken)
+    const id = syncToken[0]._id
+    const token = syncToken[0].token
+    const newChanges = await calendar.events.list({syncToken: token, calendarId: await calendarId()})
+    await SyncToken.findByIdAndUpdate(id, {token: newChanges.data.nextSyncToken, updated: Date.now()})
+    console.log('See changes:', newChanges.data)
+
+})
+
+app.post('/stopWatch', async (req, res) =>  {
+    const {id, resourceId} = req.body
+    try {
+        await calendar.channels.stop({requestBody: {id: id, resourceId: resourceId}})
+        res.send('stopped watching the specified channel!').status(204)
+
+    } catch (e) {
+        res.status(500)
+        console.log('error', e)
+    }
+})
+
 // Selected date always needs to be at 00:00 on that date. Otherwise certain times won't be returned. 
 
-function calculateTime(events, selectedDate) {
-    let treatmentDurationMs = 30 * 60 * 1000;
+function calculateTime(events, selectedDate, trDuration) {
+    console.log(events)
+    let treatmentDurationMs = trDuration * 60 * 1000;
     const date = new Date(selectedDate);
     date.setUTCHours(0, 0, 0, 0);
     const nextDay = new Date(date); 
@@ -196,11 +343,14 @@ function calculateTime(events, selectedDate) {
             availableTimes.push(slots.toISOString())
         }
     };
+    console.log(availableTimes)
     const today = new Date();
         today.setHours(today.getHours() + 2);
     for (let i = 0; i < events.length; i++) {
         const eventStart = events[i].eventStart.getTime()
         const eventEnd = events[i].eventEnd.getTime()
+                console.log(eventStart, eventEnd)
+
         for(let t = 0; t < availableTimes.length; t++) {
             const treatmentStart = new Date(availableTimes[t])
             const treatmentEnd = new Date(availableTimes[t])
@@ -208,8 +358,8 @@ function calculateTime(events, selectedDate) {
             if ( treatmentStart.getTime() < today.getTime()) {
                     availableTimes.splice(t, 1)
                     t--
-                } else if (treatmentStart.getTime() < eventStart && treatmentEnd.getTime() < eventStart
-                || treatmentStart.getTime() > eventEnd && treatmentEnd.getTime() > eventEnd
+                } else if (treatmentStart.getTime() < eventStart && treatmentEnd.getTime() <= eventStart
+                || treatmentStart.getTime() >= eventEnd && treatmentEnd.getTime() > eventEnd
                 ) {
                     continue
 
@@ -220,7 +370,7 @@ function calculateTime(events, selectedDate) {
         }
     };
 
-    console.log(availableTimes)
+    console.log("before filter", availableTimes)
     const availableTimeSlots = lockedTimeSlots.length > 0 ? availableTimes.filter(e => {
         /* If the strict equal comparison is true, Every will return true. 
         Once it finds an element that doesn't meet the test function, it will return False and stop. */
@@ -236,6 +386,27 @@ function calculateTime(events, selectedDate) {
     // Some Method
     console.log(availableTimeSlots)
     return availableTimeSlots;
+}
+
+function calcEndTime(trStart, trDuration) {
+    const start = new Date(trStart)
+    const durationMs = trDuration * 60 * 1000
+    const trEndTime = new Date((start.getTime() + durationMs))
+    return trEndTime.toISOString()
+}
+
+async function calendarId () {
+    const calendarList = await calendar.calendarList.list();
+    const calendarId = calendarList.data.items.filter((f) => {
+                        return f.summary == 'Test Praktijk 56'
+                        }).map((m) => {
+                            return m.id
+                        })
+     return calendarId
+}
+
+async function getCalendarUpdates () { 
+
 }
 
 // calculateTime()
