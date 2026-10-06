@@ -1,0 +1,64 @@
+* {
+  margin: 0px;
+  padding: 0px;
+}
+
+#root {
+  height: 100vh;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 25%);
+  grid-template-rows: 5vh repeat(2, 45vh) 5vh;
+  justify-items: center;
+  align-items: center;
+}
+
+body {
+  width: 100%;
+  height: 100vh;
+  display: grid;
+ 
+}
+
+.header {
+  height: 100%;
+  width: 100%;
+  background-color: rgba(185, 153, 78, 0.99);
+  grid-area: 1/1/1/5;
+}
+
+
+.backgroundContainer {
+  /* margin-top: -30px; */
+  grid-area: 2/1/5/5;
+  width: 100%;
+  height: 100%;
+  mask: 
+    radial-gradient(112.3px at 50% calc(100% + 100px),#0000 calc(99% - 1px),#000 calc(101% - 1px) 99%,#0000 101%) calc(50% - 100px) calc(50% - 25.5px + .5px)/200px 51px ,
+    radial-gradient(112.3px at 50% -100px,#0000 calc(99% - 1px),#000 calc(101% - 1px) 99%,#0000 101%) 50% calc(50% + 25.5px)/200px 51px;
+  z-index: -1;
+}
+
+.backgroundColor {
+  background-color: rgba(0, 0, 0, 0.164);
+  height: 100%;
+  width: 100%;
+}
+
+.bookingAppContainer {
+  width: 75%;
+  height: 90%;
+  grid-area: 2/2/4/4;
+  z-index: 2;
+  background-color: whitesmoke;
+  border: 1px solid;
+  border-radius: 10px;
+}
+
+.bookingAppContainer > h1 {
+  text-align: center;
+}
+
+.buttonsContainer {
+  height: 20%;
+}
