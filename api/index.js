@@ -127,9 +127,10 @@ app.get('/oauth2callback',  async (req, res) => {
     // console.log(watch)
     const {data} = await calendar.events.list({calendarId: await calendarId()})
     // This filters out all events before the init date & then use map to return an array with a custom Object
+    // Note: Currently cancelled events are not filtered out, this should likely be implemented. 
     const allEvents = data.items.filter((e) => {
         console.log('inside filter method', e)
-        const startDate = new Date(e.start.dateTime)
+        const startDate = new Date(e.start ? e.start.dateTime : "")
         const today = new Date()
         today.setUTCHours(0, 0, 0, 0)
         console.log(startDate, today)

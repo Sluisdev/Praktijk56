@@ -23,7 +23,7 @@ body {
 .header {
   height: 100%;
   width: 100%;
-  background-color: rgba(185, 153, 78, 0.99);
+  background-color: #A68160;
   grid-area: 1/1/1/5;
 }
 
@@ -53,6 +53,11 @@ body {
   background-color: whitesmoke;
   border: 1px solid;
   border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  flex-direction: column;
+  gap: 1em;
 }
 
 .bookingAppContainer > h1 {
@@ -60,5 +65,73 @@ body {
 }
 
 .buttonsContainer {
-  height: 20%;
+  height: fit-content;
+}
+
+
+.treatmentListContainer {
+  width: 100%;
+  height: 75%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1em;
+  overflow-y: auto;
+}
+
+.treatmentListContainer > h2 {
+  width: fit-content;
+}
+
+.treatmentItem {
+  width: 90%;
+  height: 25%;
+  background-color: #024059e4;
+  color: black;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.3em;
+  padding: 0.5em;
+
+}
+
+.highlight {
+  border: 2px solid green;
+}
+
+#treatmentName {
+  padding-right: 0.25em;
+}
+
+#duration {
+  margin-left: 0.25em;
+}
+
+.intersection {
+  border-left: 2px solid rgba(0, 0, 0, 0.498);
+}
+
+.headersTreatmentItem {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 0.25em;
+  /* width: 90%; */
+}
+
+.treatmentListDetails {
+  list-style: none;
+}
+
+.calendarContainer {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  overflow-y:scroll;
+}
+
+.timeSlotsContainer{
+  height: fit-content;
 }

@@ -1,0 +1,22 @@
+.react-calendar__tile:disabled {
+  background-color: white;
+}
+
+.react-calendar {
+  width: 50%;
+  max-width: initial;
+
+}
+
+.react-calendar__tile--now {
+    background-color: beige;
+}
+
+.react-calendar__tile {
+    border-radius: 3px;
+    margin: 1px;
+}
+
+#tileMargin {
+    margin: 1px;
+}
