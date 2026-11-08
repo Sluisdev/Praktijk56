@@ -46,7 +46,7 @@ export default function BookingAppContainer () {
     // })
     function nextStep () {
         const {propertyName, error} = validation
-        if (bkDetails[propertyName].length === 0) {
+        if (bkDetails[propertyName].length === 0) { // validation part needs to get its own function so it can determine what to validate
             setFormError(error)
             return
         }
