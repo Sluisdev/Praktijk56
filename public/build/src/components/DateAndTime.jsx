@@ -13,7 +13,7 @@ function tileDisabledCallback(date, view ) {
 }
 
 export default function DateAndTime ({apiData, bookingDetails}) {
-    const [timeSlots, setTimeSlots] = useState(apiData)
+    const [timeSlots, setTimeSlots] = useState([])
     const [isLoading, setIsLoading] = useState(false)
 return (
     <section className='calendarContainer'>
@@ -34,7 +34,7 @@ return (
         />
     {isLoading ? <p>loading timeslots...</p> :  
     <TimeSlots 
-        initTimeSlots={timeSlots} 
+        timeSlots={timeSlots.length > 0 ? timeSlots :apiData}
         bookingDetails={bookingDetails} 
     />  }
     </section>

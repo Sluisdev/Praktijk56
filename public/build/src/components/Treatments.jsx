@@ -7,37 +7,38 @@
 
 */
 
+import Section from './section'
+
 import {useState} from 'react'
+import Button from './Button'
 
 
 export default function Treatments ({apiData, bookingDetails}) {
-
-// function selectedTreatment (productId) {
-//     setBookingDetails((curr) => {
-//         return {...curr, productId: productId }
-//     })
-// }
     const [selectedElememt, setSelectedElement] = useState()
+    const handleClick = (event, d) => {bookingDetails.productId = d._id; console.log(bookingDetails)}
     return (
-        <section className="treatmentListContainer">
-            {apiData.map(e => {
-                const checkId = e._id === selectedElememt
+        <Section className="treatmentListContainer">
+            {apiData.map(d => {
+                const checkId = d._id === selectedElememt
+                console.log(checkId)
                 return (
-                <section 
+                <Button 
                     className={checkId ? "treatmentItem highlight" : "treatmentItem"} 
-                    key={e.productId} 
-                    onClick={() => {bookingDetails.productId = e._id; setSelectedElement(e._id)}}
+                    key={d.productId} 
+                    handleClick={(e) => handleClick(e, d)}
+                    type={"button"}
                     >
                     <hgroup className="headersTreatmentItem">
-                        <h3 id="treatmentName">{e.name}</h3>
+                        <h3 id="treatmentName">{d.name}</h3>
                     </hgroup>
-                    <p>{e.description}</p>
+                    <p>{d.description}</p>
                     <ul className="treatmentListDetails">
-                        <li>Duur: {e.duration} minuten</li>
+                        <li>Duur: {d.duration} minuten</li>
                         <li>Prijs: </li>
                     </ul>
-                </section>)
+                </Button>)
             })}
-        </section>
+        {/* Need to display a error message when no product is selected & grey out button */}
+        </Section>
     )
 }
